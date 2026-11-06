@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/fondo_circuito"
+    android:background="@drawable/ver_perfil"
     android:gravity="center_horizontal"
     android:orientation="vertical">
 
+    <!-- Encabezado con Nombre de Usuario -->
     <TextView
         android:id="@+id/tvusumanipular"
         android:layout_width="match_parent"
@@ -21,50 +20,72 @@
         android:textSize="22sp"
         android:textStyle="bold" />
 
+    <!-- Título de la pantalla -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:layout_marginBottom="30dp"
-        android:text="Manipular Semaforo"
+        android:layout_marginBottom="24dp"
+        android:text="Manipular ESP32"
         android:textColor="@color/white"
         android:textSize="26sp"
         android:textStyle="bold" />
 
-    <Button
-        android:id="@+id/btnon"
-        android:layout_width="140dp"
-        android:layout_height="140dp"
-        android:layout_marginBottom="24dp"
-        android:backgroundTint="#48D135"
-        android:insetTop="0dp"
-        android:insetBottom="0dp"
-        android:text="Encender"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+    <!-- Espacio flexible superior para centrar los controles -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
-    <Button
-        android:id="@+id/btnoff"
-        android:layout_width="140dp"
-        android:layout_height="140dp"
-        android:layout_marginBottom="40dp"
-        android:backgroundTint="#D02525"
-        android:insetTop="0dp"
-        android:insetBottom="0dp"
-        android:text="Apagar"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+    <!-- Tarjeta / Contenedor de control -->
+    <LinearLayout
+        android:layout_width="320dp"
+        android:layout_height="wrap_content"
+        android:background="#E6FFFFFF"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="20dp">
 
+        <TextView
+            android:id="@+id/tvEstadoActual"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingBottom="16dp"
+            android:text="Estado: Desconocido"
+            android:textColor="#1B263B"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnControlSensorBuzzer"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:backgroundTint="#D32F2F"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="Desactivar Sensor y Buzzer"
+            android:textColor="@android:color/white"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Espacio flexible inferior -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Botón Volver con estilo unificado -->
     <Button
-        android:id="@+id/btnvolman"
+        android:id="@+id/btnVolverManipular"
         android:layout_width="320dp"
         android:layout_height="55dp"
+        android:layout_marginBottom="24dp"
         android:backgroundTint="#8B0000"
         android:insetTop="0dp"
         android:insetBottom="0dp"
         android:text="Volver"
+        android:textColor="@android:color/white"
         android:textSize="16sp"
         android:textStyle="bold" />
 

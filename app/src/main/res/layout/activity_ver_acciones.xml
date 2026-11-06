@@ -8,6 +8,7 @@
     android:gravity="center_horizontal"
     android:orientation="vertical">
 
+    <!-- Encabezado con Nombre de Usuario -->
     <TextView
         android:id="@+id/tvusuacciones"
         android:layout_width="match_parent"
@@ -21,34 +22,54 @@
         android:textSize="22sp"
         android:textStyle="bold" />
 
+    <!-- Título -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="12dp"
         android:text="Ver Acciones"
         android:textColor="@color/white"
         android:textSize="26sp"
         android:textStyle="bold" />
 
-    <ImageView
-        android:id="@+id/ivlistado"
+    <!-- ListView para las lecturas de Firebase -->
+    <ListView
+        android:id="@+id/lvAcciones"
         android:layout_width="320dp"
-        android:layout_height="320dp"
-        android:layout_marginBottom="30dp"
-        android:adjustViewBounds="false"
-        android:background="@drawable/acciones"
-        android:scaleType="matrix"
-        android:src="@drawable/fotolistado" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#E6FFFFFF"
+        android:divider="#B0BEC5"
+        android:dividerHeight="1dp"
+        android:padding="8dp" />
 
+    <!-- Botón Refrescar Listado -->
+    <Button
+        android:id="@+id/btnRefrescar"
+        android:layout_width="320dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="10dp"
+        android:backgroundTint="#1B263B"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="Refrescar Listado"
+        android:textColor="@android:color/white"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <!-- Botón Volver con el estilo original -->
     <Button
         android:id="@+id/btnvolacc"
         android:layout_width="320dp"
         android:layout_height="55dp"
+        android:layout_marginBottom="24dp"
         android:backgroundTint="#8B0000"
         android:insetTop="0dp"
         android:insetBottom="0dp"
         android:text="Volver"
+        android:textColor="@android:color/white"
         android:textSize="16sp"
         android:textStyle="bold" />
 
