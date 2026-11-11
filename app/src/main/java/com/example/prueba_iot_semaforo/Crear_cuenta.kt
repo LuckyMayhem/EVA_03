@@ -1,140 +1,66 @@
 package com.example.prueba_iot_semaforo
 
-import android.content.Context
-import android.content.Intent
 import android.os.Bundle
-import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
-import android.widget.Spinner
 import android.widget.Toast
-import androidx.activity.addCallback
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.database.FirebaseDatabase
+import java.security.MessageDigest
 
 class Crear_cuenta : AppCompatActivity() {
 
-    private lateinit var txtrut: EditText
-    private lateinit var txtnom: EditText
-    private lateinit var txtape: EditText
-    private lateinit var txtema: EditText
-    private lateinit var spncargo: Spinner
-    private lateinit var txtcon: EditText
-    private lateinit var txtcon2: EditText
-    private lateinit var btnregistrar: Button
-    private lateinit var btnvolver: Button
+    private lateinit var etNombre: EditText
+    private lateinit var etCorreo: EditText
+    private lateinit var etPassword: EditText
+    private lateinit var btnRegistrar: Button
+    private lateinit var btnVolver: Button
+
+    private val db = FirebaseDatabase.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_crear_cuenta)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+
+        etNombre = findViewById(R.id.etnomreg)
+        etCorreo = findViewById(R.id.etcorreg)
+        etPassword = findViewById(R.id.etconreg)
+        btnRegistrar = findViewById(R.id.btncrearcuenta)
+        btnVolver = findViewById(R.id.btnvolcrear)
+
+        btnRegistrar.setOnClickListener {
+            val nombre = etNombre.text.toString().trim()
+            val correo = etCorreo.text.toString().trim()
+            val passPlano = etPassword.text.toString().trim()
+
+            if (nombre.isEmpty() || correo.isEmpty() || passPlano.isEmpty()) {
+                Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val passSeguro = hashSHA256(passPlano)
+
+            val usuario = HashMap<String, Any>()
+            usuario["nombre"] = nombre
+            usuario["correo"] = correo
+            usuario["password"] = passSeguro
+
+            db.getReference("Usuario").push().setValue(usuario).addOnSuccessListener {
+                Toast.makeText(this, "Cuenta registrada de forma segura", Toast.LENGTH_SHORT).show()
+                finish()
+            }.addOnFailureListener {
+                Toast.makeText(this, "Error al registrar en Firebase", Toast.LENGTH_SHORT).show()
+            }
         }
 
-        txtrut = findViewById(R.id.txtrut_reg)
-        txtnom = findViewById(R.id.txtnom_reg)
-        txtape = findViewById(R.id.txtape_reg)
-        txtema = findViewById(R.id.txtema_reg)
-        spncargo = findViewById(R.id.spncargo_reg)
-        txtcon = findViewById(R.id.txtcon_reg)
-        txtcon2 = findViewById(R.id.txtcon2_reg)
-        btnregistrar = findViewById(R.id.btcrear)
-        btnvolver = findViewById(R.id.btvolver)
-
-        botonRegistrar()
-        botonVolver()
-        desactivarFlecha()
-
-    } // Cierra el "onCreate".
-
-
-
-    fun botonVolver() {
-        btnvolver.setOnClickListener {
-            var intent = Intent(this@Crear_cuenta, Login::class.java)
-            startActivity(intent)
+        btnVolver.setOnClickListener {
+            finish()
         }
-    } // Cierra la función "botonVolver".
+    }
 
-
-
-    fun botonRegistrar() {
-        btnregistrar.setOnClickListener {
-            if (txtrut.getText().toString().trim().isEmpty()
-                || txtnom.getText().toString().trim().isEmpty()
-                || txtape.getText().toString().trim().isEmpty()
-                || txtema.getText().toString().trim().isEmpty()
-                || txtcon.getText().toString().trim().isEmpty()
-                || txtcon2.getText().toString().trim().isEmpty()) {
-
-                Toast.makeText(
-                    this@Crear_cuenta,
-                    "¡ Complete Los Campos Faltantes !",
-                    Toast.LENGTH_LONG
-                ).show()
-
-            } else {
-
-                var rut = txtrut.getText().toString().trim().toInt()
-                var nom = txtnom.getText().toString().trim()
-                var ape = txtape.getText().toString().trim()
-                var ema = txtema.getText().toString().trim()
-                var ocu = spncargo.selectedItem.toString()
-                var c1 = txtcon.getText().toString().trim()
-                var c2 = txtcon2.getText().toString().trim()
-
-                if (c1.equals(c2) == false) {
-                    Toast.makeText(
-                        this@Crear_cuenta,
-                        "¡ Las contraseñas no coinciden !",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                } else {
-
-                    val dbref = FirebaseDatabase.getInstance().getReference("Usuario")
-                    var nuevoUsuario = Usuario(rut, nom, ape, ema, ocu, c1)
-
-                    dbref.child(rut.toString()).setValue(nuevoUsuario).addOnCompleteListener {
-                        ocultarTeclado()
-                        Toast.makeText(
-                            this@Crear_cuenta,
-                            "¡ Usuario Registrado con Éxito !",
-                            Toast.LENGTH_SHORT
-                        ).show()
-
-                        var intent = Intent(this@Crear_cuenta, Login::class.java)
-                        startActivity(intent)
-                    }
-
-                } // Cierra if/else contraseñas.
-
-            } // Cierra if/else campos vacíos.
-
-        }
-    } // Cierra la función "botonRegistrar".
-
-
-
-    fun desactivarFlecha() {
-        onBackPressedDispatcher.addCallback(this) {
-
-        }
-    } // Cierra el "desactivarFlecha".
-
-
-
-    private fun ocultarTeclado() {
-        val view = currentFocus
-        if (view != null) {
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.hideSoftInputFromWindow(view.windowToken, 0)
-        }
-    } // Cierra la función "ocultarTeclado".
-
-} // Cierra la clase "Crear_cuenta".
+    private fun hashSHA256(texto: String): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val bytes = digest.digest(texto.toByteArray(Charsets.UTF_8))
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+}

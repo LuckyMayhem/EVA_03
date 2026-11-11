@@ -1,144 +1,87 @@
 package com.example.prueba_iot_semaforo
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
-import androidx.activity.addCallback
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import java.security.MessageDigest
 
 class Login : AppCompatActivity() {
 
-    private lateinit var txtrut: EditText
-    private lateinit var txtcon: EditText
-    private lateinit var btnini: Button
-    private lateinit var btncrear: Button
+    private lateinit var etCorreo: EditText
+    private lateinit var etPassword: EditText
+    private lateinit var btnIniciar: Button
+    private lateinit var btnIrCrear: Button
+
+    private val db = FirebaseDatabase.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_login)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+
+        etCorreo = findViewById(R.id.etcorlogin)
+        etPassword = findViewById(R.id.etconlogin)
+        btnIniciar = findViewById(R.id.btniniciarsesion)
+        btnIrCrear = findViewById(R.id.btncrearlogin)
+
+        btnIniciar.setOnClickListener {
+            val correoIngresado = etCorreo.text.toString().trim()
+            val passPlano = etPassword.text.toString().trim()
+
+            if (correoIngresado.isEmpty() || passPlano.isEmpty()) {
+                Toast.makeText(this, "Ingresa tus credenciales", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val passHash = hashSHA256(passPlano)
+
+            db.getReference("Usuario").addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    var accesoValido = false
+                    var nombreUsuario = ""
+
+                    for (u in snapshot.children) {
+                        val correoBD = u.child("correo").value?.toString() ?: ""
+                        val passBD = u.child("password").value?.toString() ?: ""
+
+                        if (correoBD.equals(correoIngresado, ignoreCase = true) && passBD == passHash) {
+                            accesoValido = true
+                            nombreUsuario = u.child("nombre").value?.toString() ?: "Usuario"
+                            break
+                        }
+                    }
+
+                    if (accesoValido) {
+                        val intent = Intent(this@Login, Menu::class.java)
+                        intent.putExtra("NOMBRE_USUARIO", nombreUsuario)
+                        startActivity(intent)
+                        finish()
+                    } else {
+                        Toast.makeText(this@Login, "Credenciales incorrectas", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Toast.makeText(this@Login, "Error de red con Firebase", Toast.LENGTH_SHORT).show()
+                }
+            })
         }
 
-        txtrut = findViewById(R.id.txtrut)
-        txtcon = findViewById(R.id.txtcon)
-        btnini = findViewById(R.id.btnini)
-        btncrear = findViewById(R.id.btncrear)
-
-        botonLogin()
-        botonCrearCuenta()
-        desactivarFlecha()
-
-    } // Cierra el "onCreate".
-
-
-
-    fun botonCrearCuenta() {
-        btncrear.setOnClickListener {
-            var intent = Intent(this@Login, Crear_cuenta::class.java)
+        btnIrCrear.setOnClickListener {
+            val intent = Intent(this, Crear_cuenta::class.java)
             startActivity(intent)
         }
-    } // Cierra la función "botonCrearCuenta".
+    }
 
-
-
-    fun botonLogin() {
-        btnini.setOnClickListener {
-            if (txtrut.getText().toString().trim().isEmpty()
-                || txtcon.getText().toString().trim().isEmpty()) {
-
-                Toast.makeText(
-                    this@Login,
-                    "¡ Complete Los Campos Faltantes !",
-                    Toast.LENGTH_LONG
-                ).show()
-
-            } else {
-
-                var rutIngresado = txtrut.getText().toString().trim().toInt()
-                var conIngresada = txtcon.getText().toString().trim()
-                var estado = false
-
-                val dbref = FirebaseDatabase.getInstance().getReference("Usuario")
-
-                dbref.addListenerForSingleValueEvent(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-
-                        for (x in snapshot.getChildren()) {
-
-                            var rutDb = x.child("rut").getValue().toString().toInt()
-                            var conDb = x.child("contraseña").getValue().toString()
-
-                            if (rutIngresado == rutDb && conIngresada.equals(conDb)) {
-
-                                estado = true
-                                val nom = x.child("nombre").getValue().toString()
-                                val ape = x.child("apellido").getValue().toString()
-                                val cor = x.child("correo").getValue().toString()
-                                val ocu = x.child("ocupacion").getValue().toString()
-
-                                var usu = Usuario(rutDb, nom, ape, cor, ocu, conDb)
-                                var intent = Intent(this@Login, Menu::class.java)
-                                intent.putExtra("usu", usu)
-                                startActivity(intent)
-
-                            }
-                        } // Cierra el ciclo for.
-
-                        if (estado == false) {
-                            txtrut.setText("")
-                            txtcon.setText("")
-                            ocultarTeclado()
-
-                            Toast.makeText(
-                                this@Login,
-                                "¡ Error de Rut y/o Contraseña !",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-
-                    } // Cierra el "onDataChange".
-
-                    override fun onCancelled(error: DatabaseError) {
-                        TODO("Not yet implemented")
-                    }
-                })
-
-            } // Cierra el if/else inicial.
-
-        }
-    } // Cierra la función "botonLogin".
-
-
-
-    fun desactivarFlecha() {
-        onBackPressedDispatcher.addCallback(this) {
-
-        }
-    } // Cierra el "desactivarFlecha".
-
-
-
-    private fun ocultarTeclado() {
-        val view = currentFocus
-        if (view != null) {
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.hideSoftInputFromWindow(view.windowToken, 0)
-        }
-    } // Cierra la función "ocultarTeclado".
-
-} // Cierra la clase "Login".
+    private fun hashSHA256(texto: String): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val bytes = digest.digest(texto.toByteArray(Charsets.UTF_8))
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+}

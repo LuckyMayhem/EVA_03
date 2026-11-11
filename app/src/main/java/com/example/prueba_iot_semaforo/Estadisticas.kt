@@ -1,63 +1,86 @@
 package com.example.prueba_iot_semaforo
 
-import android.content.Intent
 import android.os.Bundle
+import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.ListView
 import android.widget.TextView
-import androidx.activity.addCallback
-import androidx.activity.enableEdgeToEdge
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 class Estadisticas : AppCompatActivity() {
 
     private lateinit var tvusuestadisticas: TextView
-    private lateinit var btnvolest: Button
+    private lateinit var lvEstadisticas: ListView
+    private lateinit var btnRefrescarEst: Button
+    private lateinit var btnVolverEst: Button
 
-    // Objeto donde se recibirá el objeto "usu".
-    private var usu: Usuario? = null
+    private val db = FirebaseDatabase.getInstance()
+    private val listaItems = ArrayList<EstadisticaItem>()
+    private lateinit var adapter: ArrayAdapter<EstadisticaItem>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_estadisticas)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
 
         tvusuestadisticas = findViewById(R.id.tvusuestadisticas)
-        btnvolest = findViewById(R.id.btnvolest)
+        lvEstadisticas = findViewById(R.id.lvEstadisticas)
+        btnRefrescarEst = findViewById(R.id.btnRefrescarEst)
+        btnVolverEst = findViewById(R.id.btnVolverEst)
 
-        // Se recibe el objeto enviado desde la actividad anterior.
-        usu = intent.getSerializableExtra("usu") as? Usuario
+        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listaItems)
+        lvEstadisticas.adapter = adapter
 
-        // Se muestra el dato solo si NO es NULL
-        tvusuestadisticas.setText("Bienvenido Usuario : " + usu?.nombre + " " + usu?.apellido)
-
-        volver()
-        desactivarFlecha()
-
-    } // Cierra el "onCreate".
-
-
-
-    fun volver() {
-        btnvolest.setOnClickListener {
-            var intent = Intent(this@Estadisticas, Menu::class.java)
-            intent.putExtra("usu", usu)
-            startActivity(intent)
+        val nombreUsuario = intent.getStringExtra("NOMBRE_USUARIO")
+        if (!nombreUsuario.isNullOrEmpty()) {
+            tvusuestadisticas.text = nombreUsuario
         }
-    } // Cierra la función "volver".
 
+        cargarEstadisticas()
 
-
-    fun desactivarFlecha() {
-        onBackPressedDispatcher.addCallback(this) {
-
+        btnRefrescarEst.setOnClickListener {
+            cargarEstadisticas()
+            Toast.makeText(this, "Estadísticas actualizadas", Toast.LENGTH_SHORT).show()
         }
-    } // Cierra el "desactivarFlecha".
 
-} // Cierra la clase "Estadisticas".
+        btnVolverEst.setOnClickListener {
+            finish()
+        }
+    }
+
+    private fun cargarEstadisticas() {
+        val refEstadisticas = db.getReference("Estadisticas")
+
+        refEstadisticas.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                listaItems.clear()
+
+                if (snapshot.exists()) {
+                    val personas = snapshot.child("personas_detectadas").value?.toString() ?: "0"
+                    val promDistancia = snapshot.child("promedio_distancia").value?.toString() ?: "0.0"
+                    val promTiempoDet = snapshot.child("promedio_tiempo_detectado").value?.toString() ?: "0.0"
+                    val promTiempoNoDet = snapshot.child("promedio_tiempo_no_detectado").value?.toString() ?: "0.0"
+                    val ultimaAct = snapshot.child("ultima_actualizacion").value?.toString() ?: "Sin registro"
+
+                    listaItems.add(EstadisticaItem("• Personas Detectadas en el área (<= 10cm):", "$personas personas"))
+                    listaItems.add(EstadisticaItem("• Promedio de Distancia en general:", "$promDistancia cm"))
+                    listaItems.add(EstadisticaItem("• Promedio tiempo en rango (<= 10cm):", "$promTiempoDet segundos"))
+                    listaItems.add(EstadisticaItem("• Promedio tiempo sin detección:", "$promTiempoNoDet segundos"))
+                    listaItems.add(EstadisticaItem("Última actualización:", ultimaAct))
+                } else {
+                    listaItems.add(EstadisticaItem("Sin datos", "Aún no se registran estadísticas en Firebase."))
+                }
+
+                adapter.notifyDataSetChanged()
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@Estadisticas, "Error al conectar con la base de datos", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+}
