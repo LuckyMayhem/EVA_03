@@ -36,11 +36,11 @@ class Ver_acciones : AppCompatActivity() {
             tvusuacciones.text = nombreUsuario
         }
 
-        listarAcciones()
+        listarDatos()
 
         btnRefrescar.setOnClickListener {
-            listarAcciones()
-            Toast.makeText(this, "Acciones refrescadas", Toast.LENGTH_SHORT).show()
+            listarDatos()
+            Toast.makeText(this, "Datos refrescados", Toast.LENGTH_SHORT).show()
         }
 
         btnvolacc.setOnClickListener {
@@ -48,44 +48,45 @@ class Ver_acciones : AppCompatActivity() {
         }
     }
 
-    private fun listarAcciones() {
-        val refHistorial = db.getReference("Acciones_Historial")
-        val listaAcciones = ArrayList<EstadoAccion>()
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listaAcciones)
+    private fun listarDatos() {
+        val refDatos = db.getReference("Datos")
+        val listaDatos = ArrayList<Datos>()
+        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listaDatos)
         lvAcciones.adapter = adapter
 
-        refHistorial.addListenerForSingleValueEvent(object : ValueEventListener {
+        refDatos.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                listaAcciones.clear()
+                listaDatos.clear()
                 for (nodo in snapshot.children) {
-                    val activo = nodo.child("sensor_buzzer_activo").getValue(Boolean::class.java) ?: false
-                    val accion = nodo.child("accion").value?.toString() ?: "Acción sin detalle"
-                    val fecha = nodo.child("fecha").value?.toString() ?: ""
-                    val hora = nodo.child("hora").value?.toString() ?: ""
+                    val dato = nodo.getValue(Datos::class.java)
+                    if (dato != null) {
+                        listaDatos.add(dato)
+                    } else {
+                        val distancia = nodo.child("distancia").value?.toString() ?: ""
+                        val estaenVerdeVal = nodo.child("estaen_verde").value
+                        val estaenVerde = when (estaenVerdeVal) {
+                            is Boolean -> estaenVerdeVal
+                            is String -> estaenVerdeVal.toBoolean()
+                            else -> false
+                        }
+                        val fecha = nodo.child("fecha").value?.toString() ?: ""
+                        val hora = nodo.child("hora").value?.toString() ?: ""
+                        val tiempoRes = nodo.child("tiempo_res").value?.toString() ?: ""
 
-                    listaAcciones.add(EstadoAccion(activo, accion, fecha, hora))
+                        listaDatos.add(Datos(distancia, estaenVerde, fecha, hora, tiempoRes))
+                    }
                 }
 
-                if (listaAcciones.isEmpty()) {
-                    db.getReference("Estado_ESP32").addListenerForSingleValueEvent(object : ValueEventListener {
-                        override fun onDataChange(sActual: DataSnapshot) {
-                            val activo = sActual.child("sensor_buzzer_activo").getValue(Boolean::class.java) ?: true
-                            val accion = sActual.child("accion").value?.toString() ?: "Estado Inicial"
-                            val fecha = sActual.child("fecha").value?.toString() ?: ""
-                            val hora = sActual.child("hora").value?.toString() ?: ""
-                            listaAcciones.add(EstadoAccion(activo, accion, fecha, hora))
-                            lvAcciones.adapter = adapter
-                        }
-                        override fun onCancelled(error: DatabaseError) {}
-                    })
+                if (listaDatos.isEmpty()) {
+                    Toast.makeText(this@Ver_acciones, "No hay registros en 'Datos'", Toast.LENGTH_SHORT).show()
                 } else {
-                    Collections.reverse(listaAcciones)
-                    lvAcciones.adapter = adapter
+                    Collections.reverse(listaDatos)
+                    adapter.notifyDataSetChanged()
                 }
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@Ver_acciones, "Error al leer acciones", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@Ver_acciones, "Error de sincronización con la base de datos", Toast.LENGTH_SHORT).show()
             }
         })
     }

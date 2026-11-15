@@ -25,16 +25,16 @@ class Login : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
-        etCorreo = findViewById(R.id.etcorlogin)
-        etPassword = findViewById(R.id.etconlogin)
-        btnIniciar = findViewById(R.id.btniniciarsesion)
-        btnIrCrear = findViewById(R.id.btncrearlogin)
+        etCorreo = findViewById(R.id.txtrut)
+        etPassword = findViewById(R.id.txtcon)
+        btnIniciar = findViewById(R.id.btnini)
+        btnIrCrear = findViewById(R.id.btncrear)
 
         btnIniciar.setOnClickListener {
-            val correoIngresado = etCorreo.text.toString().trim()
+            val credencialIngresada = etCorreo.text.toString().trim()
             val passPlano = etPassword.text.toString().trim()
 
-            if (correoIngresado.isEmpty() || passPlano.isEmpty()) {
+            if (credencialIngresada.isEmpty() || passPlano.isEmpty()) {
                 Toast.makeText(this, "Ingresa tus credenciales", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -44,22 +44,50 @@ class Login : AppCompatActivity() {
             db.getReference("Usuario").addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     var accesoValido = false
-                    var nombreUsuario = ""
+                    var usuarioEncontrado: Usuario? = null
+                    var nombreMostrar = "Usuario"
 
                     for (u in snapshot.children) {
-                        val correoBD = u.child("correo").value?.toString() ?: ""
-                        val passBD = u.child("password").value?.toString() ?: ""
+                        val correoBD = u.child("correo").value?.toString()?.trim() ?: ""
+                        val rutBD = u.child("rut").value?.toString()?.trim() ?: ""
 
-                        if (correoBD.equals(correoIngresado, ignoreCase = true) && passBD == passHash) {
-                            accesoValido = true
-                            nombreUsuario = u.child("nombre").value?.toString() ?: "Usuario"
-                            break
+                        // Coincidencia por correo o por RUT
+                        val idCoincide = correoBD.equals(credencialIngresada, ignoreCase = true) ||
+                                rutBD.equals(credencialIngresada, ignoreCase = true)
+
+                        if (idCoincide) {
+                            val passBD = u.child("password").value?.toString()?.trim()
+                                ?: u.child("contraseña").value?.toString()?.trim()
+                                ?: u.child("contrasena").value?.toString()?.trim()
+                                ?: ""
+
+                            // Coincidencia de contraseña (hash SHA-256 o texto plano)
+                            if (passBD.equals(passHash, ignoreCase = true) || passBD == passPlano) {
+                                accesoValido = true
+                                val nombre = u.child("nombre").value?.toString() ?: ""
+                                val apellido = u.child("apellido").value?.toString() ?: ""
+                                val correo = if (correoBD.isNotEmpty()) correoBD else credencialIngresada
+                                val rutInt = rutBD.toIntOrNull() ?: credencialIngresada.toIntOrNull() ?: 0
+                                val ocupacion = u.child("ocupacion").value?.toString()
+                                    ?: u.child("cargo").value?.toString()
+                                    ?: ""
+
+                                usuarioEncontrado = Usuario(rutInt, nombre, apellido, correo, ocupacion, passBD)
+
+                                nombreMostrar = if (nombre.isNotEmpty()) {
+                                    if (apellido.isNotEmpty()) "$nombre $apellido" else nombre
+                                } else {
+                                    "Usuario"
+                                }
+                                break
+                            }
                         }
                     }
 
                     if (accesoValido) {
                         val intent = Intent(this@Login, Menu::class.java)
-                        intent.putExtra("NOMBRE_USUARIO", nombreUsuario)
+                        intent.putExtra("usu", usuarioEncontrado)
+                        intent.putExtra("NOMBRE_USUARIO", nombreMostrar)
                         startActivity(intent)
                         finish()
                     } else {

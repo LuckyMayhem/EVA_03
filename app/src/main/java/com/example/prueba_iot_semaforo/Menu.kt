@@ -20,8 +20,8 @@ class Menu : AppCompatActivity() {
     private lateinit var btn4: Button
     private lateinit var btn5: Button
 
-    // Objeto donde se recibirá el objeto "usu".
     private var usu: Usuario? = null
+    private var nombreUsuarioExtra: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,11 +40,19 @@ class Menu : AppCompatActivity() {
         btn4 = findViewById(R.id.btn4)
         btn5 = findViewById(R.id.btn5)
 
-        // Se recibe el objeto enviado desde la actividad anterior.
-        usu = intent.getSerializableExtra("usu", Usuario::class.java)
+        @Suppress("DEPRECATION")
+        usu = intent.getSerializableExtra("usu") as? Usuario
+        nombreUsuarioExtra = intent.getStringExtra("NOMBRE_USUARIO") ?: ""
 
-        // Se muestra el dato solo si NO es NULL
-        tvusumenu.setText("Bienvenido Usuario : " + usu?.nombre + " " + usu?.apellido)
+        val textoBienvenida = if (usu != null && usu?.nombre?.isNotEmpty() == true) {
+            val ape = usu?.apellido ?: ""
+            "Bienvenido Usuario : ${usu?.nombre} $ape".trim()
+        } else if (nombreUsuarioExtra.isNotEmpty()) {
+            "Bienvenido Usuario : $nombreUsuarioExtra"
+        } else {
+            "Bienvenido Usuario"
+        }
+        tvusumenu.text = textoBienvenida
 
         boton1()
         boton2()
@@ -52,78 +60,77 @@ class Menu : AppCompatActivity() {
         boton4()
         boton5()
         desactivarFlecha()
+    }
 
-    } // Cierra el "onCreate".
-
-
+    private fun obtenerNombreParaIntent(): String {
+        return if (usu != null && usu?.nombre?.isNotEmpty() == true) {
+            "${usu?.nombre} ${usu?.apellido}".trim()
+        } else if (nombreUsuarioExtra.isNotEmpty()) {
+            nombreUsuarioExtra
+        } else {
+            "Usuario"
+        }
+    }
 
     fun boton1() {
         btn1.setOnClickListener {
-            var intent = Intent(this@Menu, ManipularEsp32::class.java)
+            val intent = Intent(this@Menu, ManipularEsp32::class.java)
             intent.putExtra("usu", usu)
+            intent.putExtra("NOMBRE_USUARIO", obtenerNombreParaIntent())
             startActivity(intent)
         }
-    } // Cierra la función "boton1".
-
-
+    }
 
     fun boton2() {
         btn2.setOnClickListener {
-            var intent = Intent(this@Menu, Ver_acciones::class.java)
+            val intent = Intent(this@Menu, Ver_acciones::class.java)
             intent.putExtra("usu", usu)
+            intent.putExtra("NOMBRE_USUARIO", obtenerNombreParaIntent())
             startActivity(intent)
         }
-    } // Cierra la función "boton2".
-
-
+    }
 
     fun boton3() {
         btn3.setOnClickListener {
-            var intent = Intent(this@Menu, Estadisticas::class.java)
+            val intent = Intent(this@Menu, Estadisticas::class.java)
             intent.putExtra("usu", usu)
+            intent.putExtra("NOMBRE_USUARIO", obtenerNombreParaIntent())
             startActivity(intent)
         }
-    } // Cierra la función "boton3".
-
-
+    }
 
     fun boton4() {
         btn4.setOnClickListener {
-            var intent = Intent(this@Menu, Ver_perfil::class.java)
+            val intent = Intent(this@Menu, Ver_perfil::class.java)
             intent.putExtra("usu", usu)
+            intent.putExtra("NOMBRE_USUARIO", obtenerNombreParaIntent())
             startActivity(intent)
         }
-    } // Cierra la función "boton4".
-
-
+    }
 
     fun boton5() {
         btn5.setOnClickListener {
-            var a = AlertDialog.Builder(this@Menu)
+            val a = AlertDialog.Builder(this@Menu)
             a.setTitle("Pregunta")
             a.setMessage("¿Desea Cerrar La Sesión?")
 
-            a.setNegativeButton("Cancelar") { dialog, which ->
+            a.setNegativeButton("Cancelar") { dialog, _ ->
                 dialog.dismiss()
             }
 
-            a.setPositiveButton("Aceptar") { dialog, which ->
-                var intent = Intent(this@Menu, Login::class.java)
+            a.setPositiveButton("Aceptar") { _, _ ->
+                val intent = Intent(this@Menu, Login::class.java)
                 startActivity(intent)
+                finish()
             }
 
             a.setIcon(R.drawable.pregunta)
             a.setCancelable(false)
             a.show()
         }
-    } // Cierra la función "boton5".
-
-
+    }
 
     fun desactivarFlecha() {
-        onBackPressedDispatcher.addCallback(this) {
-
-        }
-    } // Cierra el "desactivarFlecha".
-
-} // Cierra la clase "Menu".
+        onBackPressedDispatcher.addCallback(this) { }
+    }
+}
